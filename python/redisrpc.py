@@ -71,10 +71,9 @@ class FunctionCall(dict):
 class RedisRPCClient(object):
     """Calls remote functions using Redis as a message queue."""
 
-    def __init__(self, redis_server, input_queue, interface_class=None):
+    def __init__(self, redis_server, input_queue):
         self.redis_server = redis_server
         self.input_queue = input_queue
-        self.interface_class = interface_class
 
     def call(self, method_name, *args, **kwargs):
         function_call = FunctionCall(method_name, args, kwargs)
@@ -99,9 +98,6 @@ class RedisRPCClient(object):
 
     def __getattr__(self, name):
         """Treat missing attributes as remote method call invocations."""
-        if self.interface_class is not None:
-            if not hasattr(self.interface_class, name):
-                raise AttributeError("%r object has no attribute %r" % (self.interface_class.__name__, name))
         return curry(self.call, name)
 
 
