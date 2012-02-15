@@ -26,7 +26,7 @@ Brief Example
 Here is a brief example using Python. The full source is in the
 `python/examples/` directory.
 
-<img src="redisrpc_example.svg">
+<img src="docs/redisrpc_example.svg">
 
 client.py
 
