@@ -1,88 +1,92 @@
-redisrpc: leightweight RPC for Redis
+redisrpc
+========
 
----
+by Nathan Farrington
+<http://nathanfarrington.com>
 
-This example Python code shows a client accessing a Calculator instance remotely.
+Introduction
+------------
 
-calc.py
+[Redis][Redis] is a powerful in-memory data structure server that is useful
+for building fast distributed systems. Redis implements message queue
+functionality with its use of list data structures and the `LPOP`, `BLPOP`,
+and `RPUSH` commands. The `redisrpc` library implements a lightweight RPC
+mechanism using Redis message queues to temporarily hold RPC request and RPC
+response messages. These messages are encoded as JSON strings for portability.
 
-    class Calculator(object):
-        """A simple calculator class with state used for testing."""
+Many other RPC mechanisms are either programming language specific (e.g. [Java
+RMI][JavaRMI]) or requires boiler-plate code for explicit typing (e.g.
+[Thrift][Thrift]). `redisrpc` was designed to be extremely easy to use at the
+expense of performance. It lets you get it working now and tune the
+performance later if it becomes necessary.
 
-        def __init__(self):
-            self.acc = 0.0
+Brief Example
+-------------
 
-        def __str__(self):
-            return '%s' % self.acc
-        
-        def clr(self):
-            self.acc = 0.0
+Here is a brief example using Python. The full source is in the
+`python/examples/` directory.
 
-        def add(self,number):
-            self.acc += number
-            return self.acc
-
-        def div(self,number):
-            self.acc /= number
-            return self.acc
-
-        def mul(self,number):
-            self.acc *= number
-            return self.acc
-
-        def sub(self,number):
-            self.acc -= number
-            return self.acc
-
-        def val(self):
-            return self.acc
-
-
-server.py
-
-    import redis
-
-    from redisrpc import RedisRPCServer
-    from calc import Calculator
-
-    redis_server = redis.Redis()
-    server = RedisRPCServer(redis_server, 'calc', Calculator())
-    server.run()
-
+![redisrpc Example][redisrpc_example]
 
 client.py
 
-    import traceback
+    redis_server = redis.Redis()
+    calculator = redisrpc.RedisRPCClient(redis_server, 'calc')
+    calculator.clr()
+    calculator.add(5)
+    calculator.sub(3)
+    calculator.mul(4)
+    calcaultor.div(2)
+    assert calculator.val() == 4
 
-    import redis
-
-    from redisrpc import RedisRPCClient
-    from calc import Calculator
-
-    def do_calculations(calculator):
-        calculator.clr()
-        print(calculator.add(2.0))
-        print(calculator.add(5.5))
-        print(calculator.sub(3.1))
-        print(calculator.mul(2))
-        print(calculator.div(3))
-        try:
-            print(calculator.foo())
-        except:
-            traceback.print_exc()
-        calculator.clr()
-
-    # Local object.
-    calculator = Calculator()
-    do_calculations(calculator)
+server.py
 
     redis_server = redis.Redis()
+    server = redisrpc.RedisRPCServer(redis_server, 'calc', calc.Calculator())
+    server.run()
 
-    # Remote object.
-    calculator = RedisRPCClient(redis_server, 'calc')
-    do_calculations(calculator)
+That's all there is to it. The server wraps a local object, in this case
+a Calculator object. It listens for RPC requests from the 'calc' message
+queue. When it receives a request, it executes it on the calculator object
+and returns the result to the client. If an exception occurs then the
+exception is sent to the client.
 
-    # Remote object with local run-time type checking.
-    calculator = RedisRPCClient(redis_server, 'calc', Calculator)
-    do_calculations(calculator)
+Notice that the client doesn't actually access the Calculator class. Instead
+its method invocations are intercepted and wrapped into RPC requests that are
+forwarded to the server. The return values embedded in the RPC responses are
+used for the values of the expressions.
 
+Message Format
+--------------
+
+rpc_request
+
+
+
+
+
+rpc_response
+
+
+Source Code
+-----------
+Source code is available at <http://github.com/nfarring/redisrpc>.
+
+License
+-------
+The redisrpc code is distributed under a BSD license. See the file `LICENSE`
+for more information.
+
+Version History
+---------------
+February 14, 2012
+
+* Initial release.
+
+[Redis]: http://redis.io/
+
+[JavaRMI]: https://en.wikipedia.org/wiki/Java_remote_method_invocation
+
+[Thrift]: https://en.wikipedia.org/wiki/Apache_Thrift
+
+[redisrpc_example]: redisrpc_example.svg
