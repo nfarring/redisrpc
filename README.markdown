@@ -26,24 +26,28 @@ Brief Example
 Here is a brief example using Python. The full source is in the
 `python/examples/` directory.
 
-<img src="docs/redisrpc_example.svg">
+<img src="docs/redisrpc_example.png" width=438 height=238>
 
 client.py
 
-    redis_server = redis.Redis()
-    calculator = redisrpc.RedisRPCClient(redis_server, 'calc')
-    calculator.clr()
-    calculator.add(5)
-    calculator.sub(3)
-    calculator.mul(4)
-    calcaultor.div(2)
-    assert calculator.val() == 4
+```python
+redis_server = redis.Redis()
+calculator = redisrpc.RedisRPCClient(redis_server, 'calc')
+calculator.clr()
+calculator.add(5)
+calculator.sub(3)
+calculator.mul(4)
+calcaultor.div(2)
+assert calculator.val() == 4
+```
 
 server.py
 
-    redis_server = redis.Redis()
-    server = redisrpc.RedisRPCServer(redis_server, 'calc', calc.Calculator())
-    server.run()
+```python
+redis_server = redis.Redis()
+server = redisrpc.RedisRPCServer(redis_server, 'calc', calc.Calculator())
+server.run()
+```
 
 That's all there is to it. The server wraps a local object, in this case
 a Calculator object. It listens for RPC requests from the 'calc' message
