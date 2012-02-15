@@ -1,4 +1,4 @@
-redisrpc
+RedisRPC
 ========
 
 by Nathan Farrington
@@ -10,15 +10,17 @@ Introduction
 [Redis][Redis] is a powerful in-memory data structure server that is useful
 for building fast distributed systems. Redis implements message queue
 functionality with its use of list data structures and the `LPOP`, `BLPOP`,
-and `RPUSH` commands. The `redisrpc` library implements a lightweight RPC
-mechanism using Redis message queues to temporarily hold RPC request and RPC
-response messages. These messages are encoded as JSON strings for portability.
+and `RPUSH` commands. RedisRPC implements a lightweight RPC mechanism using
+Redis message queues to temporarily hold RPC request and response
+messages. These messages are encoded as JSON strings for portability.
 
 Many other RPC mechanisms are either programming language specific (e.g. [Java
-RMI][JavaRMI]) or requires boiler-plate code for explicit typing (e.g.
-[Thrift][Thrift]). `redisrpc` was designed to be extremely easy to use at the
-expense of performance. It lets you get it working now and tune the
-performance later if it becomes necessary.
+RMI][JavaRMI]) or require boiler-plate code for explicit typing (e.g.
+[Thrift][Thrift]). RedisRPC was designed to be extremely easy to use by
+eliminating boiler-plate code while also being programming language neutral.
+High performance was not an initial goal of RedisRPC and other RPC libraries
+are likely to have better performance. Instead, RedisRPC has better programmer
+performance; it lets you get something working immediately.
 
 Brief Example
 -------------
@@ -30,7 +32,7 @@ Here is a brief example using Python. The full source is in the
 src="http://github.com/nfarring/redisrpc/raw/master/docs/redisrpc_example.png"
 width=438 height=238>
 
-client.py
+### client.py
 
 ```python
 redis_server = redis.Redis()
@@ -43,7 +45,7 @@ calcaultor.div(2)
 assert calculator.val() == 4
 ```
 
-server.py
+### server.py
 
 ```python
 redis_server = redis.Redis()
@@ -65,13 +67,10 @@ used for the values of the expressions.
 Message Format
 --------------
 
-rpc_request
+### RPC Request
 
 
-
-
-
-rpc_response
+### RPC Response
 
 
 Source Code
