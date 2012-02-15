@@ -26,7 +26,7 @@ Brief Example
 Here is a brief example using Python. The full source is in the
 `python/examples/` directory.
 
-![redisrpc Example][redisrpc_example]
+<img src="redisrpc_example.svg">
 
 client.py
 
@@ -88,5 +88,3 @@ February 14, 2012
 [JavaRMI]: https://en.wikipedia.org/wiki/Java_remote_method_invocation
 
 [Thrift]: https://en.wikipedia.org/wiki/Apache_Thrift
-
-[redisrpc_example]: redisrpc_example.svg
