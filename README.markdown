@@ -26,7 +26,9 @@ Brief Example
 Here is a brief example using Python. The full source is in the
 `python/examples/` directory.
 
-<img src="docs/redisrpc_example.png" width=438 height=238>
+<img
+src="http://github.com/nfarring/redisrpc/raw/master/docs/redisrpc_example.png"
+width=438 height=238>
 
 client.py
 
