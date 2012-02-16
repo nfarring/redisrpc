@@ -79,11 +79,17 @@ Source code is available at <http://github.com/nfarring/redisrpc>.
 
 License
 -------
-The redisrpc code is distributed under a BSD license. See the file `LICENSE`
+This software is available under the GPLv3 or later. See the file `LICENSE`
 for more information.
 
 Version History
 ---------------
+Version 0.1.0 - February 16, 2012
+
+* First versioned release.
+* Changed license from BSD to GPL: go freedom!
+* Removed an option to perform client-side run-time type idenfication in Python.
+
 February 14, 2012
 
 * Initial release.

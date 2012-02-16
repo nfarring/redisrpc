@@ -1,3 +1,5 @@
+# Python
 *.pyc
-build/
-dist/
+python/MANIFEST
+python/build/
+python/dist/
