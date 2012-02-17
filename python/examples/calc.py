@@ -1,5 +1,5 @@
 class Calculator(object):
-    """A simple calculator class with state used for testing."""
+    """A simple, mutable calculator used for testing."""
 
     def __init__(self):
         self.acc = 0.0

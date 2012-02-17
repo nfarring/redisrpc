@@ -1,0 +1,10 @@
+#!/usr/bin/env python
+
+import redis
+import redisrpc
+
+import calc
+
+redis_server = redis.Redis()
+server = redisrpc.RedisRPCServer(redis_server, 'calc', calc.Calculator())
+server.run()

@@ -1,7 +1,7 @@
 from distutils.core import setup
 
 # Ref: http://semver.org/
-VERSION='0.1.0'
+VERSION='0.1.1'
 
 AUTHOR='Nathan Farrington'
 AUTHOR_EMAIL='nfarring@gmail.com'
@@ -17,11 +17,10 @@ CLASSIFIERS=[
     'Topic :: System :: Distributed Computing'
 ]
 DESCRIPTION='Lightweight RPC using Redis'
-DOWNLOAD_URL='http://cloud.github.com/downloads/nfarring/redisrpc/redisrpc-%s.tar.gz' % VERSION
+DOWNLOAD_URL='http://cloud.github.com/downloads/nfarring/redisrpc/redisrpc-python-%s.tar.gz' % VERSION
 KEYWORDS=['Redis','RPC']
-LONG_DESCRIPTION="""Lightweight RPC using Redis 
-
-"""
+with open('README','r') as f:
+    LONG_DESCRIPTION=''.join(f.readlines())
 MAINTAINER=AUTHOR
 MAINTAINER_EMAIL=AUTHOR_EMAIL
 NAME='redisrpc'
