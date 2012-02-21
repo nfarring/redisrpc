@@ -1,2 +1,2 @@
-include README.rst
-recursive-include examples *.py calc_client calc_server
+include README.html
+recursive-include examples *.py

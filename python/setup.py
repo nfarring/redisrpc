@@ -1,7 +1,7 @@
 from distutils.core import setup
 
 # Ref: http://semver.org/
-VERSION='0.2.0'
+VERSION='0.2.1'
 
 AUTHOR='Nathan Farrington'
 AUTHOR_EMAIL='nfarring@gmail.com'
