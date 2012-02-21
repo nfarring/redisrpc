@@ -24,7 +24,8 @@ import redis
 
 __all__ = [
     'RedisRPCClient',
-    'RedisRPCServer'
+    'RedisRPCServer',
+    'RemoteException'
 ]
 
 
@@ -96,21 +97,20 @@ class RedisRPCClient(object):
         function_call = FunctionCall(method_name, args, kwargs)
         response_queue = self.input_queue + ':rpc:' + random_string()
         rpc_request = dict(function_call=function_call, response_queue=response_queue)
+        if DEBUG: print('RPC Request: %r' % rpc_request)
         rpc_request = json.dumps(rpc_request)
-        if DEBUG: print(rpc_request)
         self.redis_server.rpush(self.input_queue, rpc_request)
         timeout_s = 0 # Block forever.
         message_queue, message = self.redis_server.blpop(response_queue, timeout_s)
-        if DEBUG: print('message_queue=%r,message=%r' % (message_queue, message))
         assert message_queue == response_queue
         rpc_response = json.loads(message)
-        # Assertion fails for two reasons.
-        # 1. JSON strings are unicode, Python strings are not.
-        # 2. Empty JSON args is list, empty Python args is sequence.
-        #assert rpc_response['function_call'] == function_call
-        exception = rpc_response['exception']
+        if DEBUG: print('RPC Response: %r\n' % rpc_response)
+        exception = rpc_response.get('exception')
         if exception is not None:
-            raise eval(exception)
+            if DEBUG: print('exception: %r\n' % exception)
+            raise RemoteException(exception)
+        if 'return_value' not in rpc_response:
+            raise RempteException('malformed RPC Response message: %r' % rpc_response)
         return rpc_response['return_value']
 
     def __getattr__(self, name):
@@ -129,19 +129,24 @@ class RedisRPCServer(object):
     def run(self):
         while True:
             message_queue, message = self.redis_server.blpop(self.input_queue)
-            if DEBUG: print('message_queue=%r,message=%r' % (message_queue, message))
             assert message_queue == self.input_queue
             rpc_request = json.loads(message)
+            if DEBUG: print('RPC Request: %r' % rpc_request)
             response_queue = rpc_request['response_queue']
             function_call = FunctionCall.from_dict(rpc_request['function_call'])
             code = 'return_value = self.local_object.' + function_call.as_python_code()
             if DEBUG: print(code)
             try:
                 exec(code)
-                rpc_response = dict(function_call=function_call, return_value=return_value,exception=None)
+                rpc_response = dict(return_value=return_value)
             except:
                 (type, value, traceback) = sys.exc_info()
-                rpc_response = dict(function_call=function_call, return_value=None, exception=repr(value))
+                rpc_response = dict(exception=repr(value))
+            if DEBUG: print('RPC Response: %r\n' % rpc_response)
             rpc_response = json.dumps(rpc_response)
-            if DEBUG: print('rpc_response=%r' % rpc_response)
             self.redis_server.rpush(response_queue, rpc_response)
+
+
+class RemoteException(Exception):
+    """Raised by an RPC client when an exception occurs on the RPC server."""
+    pass

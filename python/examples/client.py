@@ -7,6 +7,8 @@ import redisrpc
 
 import calc
 
+#redisrpc.DEBUG=True
+
 def do_calculations(calculator):
     calculator.clr()
     calculator.add(5)
@@ -16,14 +18,16 @@ def do_calculations(calculator):
     assert calculator.val() == 4
     try:
         calculator.missing_method()
-    except:
-        traceback.print_exc()
+        assert False
+    except (AttributeError, redisrpc.RemoteException):
+        pass
 
-# 1. Local object.
+# 1. Local object
 calculator = calc.Calculator()
 do_calculations(calculator)
 
-# 2. Remote object.
+# 2. Remote object, should act like local object
 redis_server = redis.Redis()
 calculator = redisrpc.RedisRPCClient(redis_server, 'calc')
 do_calculations(calculator)
+print('success!')

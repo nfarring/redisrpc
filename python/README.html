@@ -1,0 +1,132 @@
+<h1>RedisRPC</h1>
+
+<p>by Nathan Farrington
+<a href="http://nathanfarrington.com">http://nathanfarrington.com</a></p>
+
+<h2>Introduction</h2>
+
+<p><a href="http://redis.io/">Redis</a> is a powerful in-memory data structure server that is useful
+for building fast distributed systems. Redis implements message queue
+functionality with its use of list data structures and the <code>LPOP</code>, <code>BLPOP</code>,
+and <code>RPUSH</code> commands. RedisRPC implements a lightweight RPC mechanism using
+Redis message queues to temporarily hold RPC request and response
+messages. These messages are encoded as <a href="http://json.org/">JSON</a> strings for portability.</p>
+
+<p>Many other RPC mechanisms are either programming language specific (e.g. <a href="https://en.wikipedia.org/wiki/Java_remote_method_invocation">Java
+RMI</a>) or require boiler-plate code for explicit typing (e.g.
+<a href="https://en.wikipedia.org/wiki/Apache_Thrift">Thrift</a>). RedisRPC was designed to be extremely easy to use by
+eliminating boiler-plate code while also being programming language neutral.
+High performance was not an initial goal of RedisRPC and other RPC libraries
+are likely to have better performance. Instead, RedisRPC has better programmer
+performance; it lets you get something working immediately.</p>
+
+<h2>Brief Example</h2>
+
+<p>Here is a brief example using Python. The full source is in the
+<code>python/examples/</code> directory.</p>
+
+<p><img
+src="http://github.com/nfarring/redisrpc/raw/master/docs/redisrpc_example.png"
+width=438 height=238></p>
+
+<h3>client.py</h3>
+
+<pre><code class="python">redis_server = redis.Redis()
+calculator = redisrpc.RedisRPCClient(redis_server, &#39;calc&#39;)
+calculator.clr()
+calculator.add(5)
+calculator.sub(3)
+calculator.mul(4)
+calcaultor.div(2)
+assert calculator.val() == 4
+</code></pre>
+
+<h3>server.py</h3>
+
+<pre><code class="python">redis_server = redis.Redis()
+server = redisrpc.RedisRPCServer(redis_server, &#39;calc&#39;, calc.Calculator())
+server.run()
+</code></pre>
+
+<p>That&#39;s all there is to it. The server wraps a local object, in this case
+a Calculator object. It listens for RPC requests from the &#39;calc&#39; message
+queue. When it receives a request, it executes it on the Calculator object
+and returns the result to the client. If an exception occurs then the
+exception is sent to the client.</p>
+
+<p>Notice that the client doesn&#39;t actually access the Calculator class. Instead
+its method invocations are intercepted and wrapped into RPC requests that are
+forwarded to the server. The return values embedded in the RPC responses are
+used for the values of the expressions.</p>
+
+<h2>Message Formats</h2>
+
+<p>All RPC messages are JSON objects.</p>
+
+<h3>RPC Request</h3>
+
+<p>An RPC Request contains two members: a <code>function_call</code> object and
+a <code>response_queue</code> string.</p>
+
+<p>A <code>function_call</code> object has three members: a <code>name</code> string for the function
+name, an <code>args</code> list for positional function arguments, and a <code>kwargs</code> object
+for named function arguments.</p>
+
+<p>The <code>response_queue</code> string is the name of the Redis list where the
+corresponding RPC Response message should be pushed by the server. This queue
+is chosen programmatically by the client to be collision free in the Redis
+namespace.  Also, this queue is used only for a single RPC Response message
+and is not reused for future RPC Response messages.</p>
+
+<pre><code class="javascript">{ &quot;function_call&quot; : {
+      &quot;args&quot; : [ 1, 2, 3 ],
+      &quot;kwargs&quot; : { &quot;a&quot; : 4, &quot;b&quot; : 5, &quot;c&quot; : 6 },
+      &quot;name&quot; : &quot;foo&quot;
+    },
+  &quot;response_queue&quot; : &quot;calc:rpc:X7Y2US&quot;
+}
+</code></pre>
+
+<h3>RPC Response (Successful)</h3>
+
+<p>If an RPC is successful, then the RPC Response object will contain a single
+member, a <code>return_value</code> of some JSON type.</p>
+
+<pre><code class="javascript">{ &quot;return_value&quot; : 4.0 }
+</code></pre>
+
+<h3>RPC Response (Exception)</h3>
+
+<p>If an RPC encounters an exceptional condition, then the RPC Response object
+will contain a single member, an <code>exception</code> string. Note that the value of
+the <code>exception</code> string might not have any meaning to the client since the
+client and server might be written in different languages or the client
+might have no knowledge of the server&#39;s wrapped object. Therefore the best
+course of action is probably to display the <code>exception</code> value to the user.</p>
+
+<pre><code class="javascript">{ &quot;exception&quot; : &quot;AttributeError(\\&quot;\&#39;Calculator\&#39; object has no attribute \&#39;foo\&#39;\\&quot;,)&quot; }
+</code></pre>
+
+<h2>Source Code</h2>
+
+<p>Source code is available at <a href="http://github.com/nfarring/redisrpc">http://github.com/nfarring/redisrpc</a>.</p>
+
+<h2>License</h2>
+
+<p>This software is available under the <a href="http://www.gnu.org/licenses/gpl.html">GPLv3</a> or later.</p>
+
+<h2>Version History</h2>
+
+<p>Version 0.1.0 - February 16, 2012</p>
+
+<ul>
+<li>First versioned release.</li>
+<li>Changed license from BSD to GPL: go freedom!</li>
+<li>Removed an option to perform client-side run-time type idenfication in Python.</li>
+</ul>
+
+<p>February 14, 2012</p>
+
+<ul>
+<li>Initial release.</li>
+</ul>
