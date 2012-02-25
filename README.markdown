@@ -22,21 +22,70 @@ High performance was not an initial goal of RedisRPC and other RPC libraries
 are likely to have better performance. Instead, RedisRPC has better programmer
 performance; it lets you get something working immediately.
 
-Brief Example
--------------
-
-Here is a brief example using Python. The full source is in the
-`python/examples/` directory.
+Calculator Example
+------------------
+Each language implementation uses the same client and server example based off
+of a mutable calculator object. The clients and servers from different
+languages are interoperable.
 
 <img
 src="http://github.com/nfarring/redisrpc/raw/master/docs/redisrpc_example.png"
 width=438 height=238>
 
+1. The client issues an RPC Request by `RPUSH`ing an RPC Request message into a
+Redis list called 'calc'.
+2. The server `BLPOP`s the RPC Request message.
+3. The server dispatches the RPC Request to a local object, which in this case
+is a Calculator object.
+4. The server accepts the return value (or exception) from the Calculator object.
+5. The server issues an RPC Response by `RPUSH`ing an RPC Response message into
+a Redis list called 'calc:rpc:`<RAND_STRING>`', which was chosen by the client.
+6. The client `BLPOP`s the RPC Response message.
+
+*Note that the server or client can be made non-blocking by using `LPOP`
+instead of `BLPOP`. I currently do not need this feature and have not added
+support for this; patches are welcome.*
+
+That's all there is to it!
+
+PHP Usage
+---------
+
+*Note that the PHP library does not currently support named function arguments.*
+
+### client.php
+
+```php
+$redis_server = new Predis\Client();
+$input_queue = 'calc';
+$calculator = new RedisRPC\Client($redis_server, $input_queue);
+$calculator->clr();
+$calculator->add(5);
+$calculator->sub(3);
+$calculator->mul(4);
+$calculator->div(2);
+assert($calculator->val() == 4);
+```
+
+### server.php
+
+```php
+$redis_server = new Predis\Client();
+$input_queue = 'calc';
+$local_object = new Calculator();
+$server = new RedisRPC\Server($redis_server, $input_queue, $local_object);
+$server->run();
+```
+
+Python Usage
+------------
+
 ### client.py
 
 ```python
 redis_server = redis.Redis()
-calculator = redisrpc.RedisRPCClient(redis_server, 'calc')
+input_queue = 'calc'
+calculator = redisrpc.Client(redis_server, input_queue)
 calculator.clr()
 calculator.add(5)
 calculator.sub(3)
@@ -49,32 +98,24 @@ assert calculator.val() == 4
 
 ```python
 redis_server = redis.Redis()
-server = redisrpc.RedisRPCServer(redis_server, 'calc', calc.Calculator())
+input_queue = 'calc'
+local_object = calc.Calculator()
+server = redisrpc.Server(redis_server, input_queue, local_object)
 server.run()
 ```
 
-That's all there is to it. The server wraps a local object, in this case
-a Calculator object. It listens for RPC requests from the 'calc' message
-queue. When it receives a request, it executes it on the Calculator object
-and returns the result to the client. If an exception occurs then the
-exception is sent to the client.
-
-Notice that the client doesn't actually access the Calculator class. Instead
-its method invocations are intercepted and wrapped into RPC requests that are
-forwarded to the server. The return values embedded in the RPC responses are
-used for the values of the expressions.
-
-Message Formats
----------------
-All RPC messages are JSON objects.
+Internal Message Formats
+------------------------
+All RPC messages are JSON objects. User code will never see these objects
+because they are handled by the RedisRPC library.
 
 ### RPC Request
 An RPC Request contains two members: a `function_call` object and
 a `response_queue` string.
 
-A `function_call` object has three members: a `name` string for the function
-name, an `args` list for positional function arguments, and a `kwargs` object
-for named function arguments.
+A `function_call` object has one required member: a `name` string for the function
+name. It also has two optional members: (a) an `args` list for positional
+function arguments, and (b) a `kwargs` object for named function arguments.
 
 The `response_queue` string is the name of the Redis list where the
 corresponding RPC Response message should be pushed by the server. This queue
@@ -119,18 +160,6 @@ Source code is available at <http://github.com/nfarring/redisrpc>.
 License
 -------
 This software is available under the [GPLv3][GPLv3] or later.
-
-Version History
----------------
-Version 0.1.0 - February 16, 2012
-
-* First versioned release.
-* Changed license from BSD to GPL: go freedom!
-* Removed an option to perform client-side run-time type idenfication in Python.
-
-February 14, 2012
-
-* Initial release.
 
 [Redis]: http://redis.io/
 

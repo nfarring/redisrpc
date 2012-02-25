@@ -1,0 +1,33 @@
+{
+    "name": "nfarring/redisrpc",
+    "type": "library",
+    "description": "Lightweight RPC for Redis",
+    "keywords": ["redis", "rpc"],
+    "homepage": "http://github.com/nfarring/redisrpc",
+    "license": "PHP",
+    "authors": [
+        {
+            "name": "Nathan Farrington",
+            "email": "nfarring@gmail.com",
+            "homepage": "http://nathanfarrington.com"
+        }
+    ],
+    "repositories": [
+        {
+            "type": "pear",
+            "url": "http://pear.php.net"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.2",
+        "predis/predis": "v0.7.1"
+    },
+    "autoload": {
+        "psr-0": {
+            "RedisRPC": "php/src"
+        }
+    },
+    "config": {
+        "vendor-dir": "php/vendor"
+    }
+}

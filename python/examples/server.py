@@ -8,5 +8,5 @@ import calc
 #redisrpc.DEBUG=True
 
 redis_server = redis.Redis()
-server = redisrpc.RedisRPCServer(redis_server, 'calc', calc.Calculator())
+server = redisrpc.Server(redis_server, 'calc', calc.Calculator())
 server.run()

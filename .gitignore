@@ -1,5 +1,11 @@
+# PHP
+composer.lock
+composer.phar
+php/vendor
 # Python
 *.pyc
+python/LICENSE
 python/MANIFEST
+python/README.rst
 python/build/
 python/dist/

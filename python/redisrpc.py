@@ -23,8 +23,8 @@ import redis
 
 
 __all__ = [
-    'RedisRPCClient',
-    'RedisRPCServer',
+    'Client',
+    'Server',
     'RemoteException'
 ]
 
@@ -61,22 +61,26 @@ class FunctionCall(dict):
     @staticmethod
     def from_dict(dictionary):
         """Return a new FunctionCall from a Python dictionary."""
-        name = dictionary['name']
-        args = dictionary['args']
-        kwargs = dictionary['kwargs']
+        name = dictionary.get('name')
+        args = dictionary.get('args')
+        kwargs = dictionary.get('kwargs')
         return FunctionCall(name, args, kwargs)
 
     def __init__(self, name, args=(), kwargs={}):
         """Create a new FunctionCall from a method name, an optional argument tuple, and an optional keyword argument
         dictionary."""
         self['name'] = name
-        self['args'] = args
-        self['kwargs'] = kwargs
+        if args is not None and args != ():
+            self['args'] = args
+        if kwargs is not None and kwargs != {}:
+            self['kwargs'] = kwargs
 
     def as_python_code(self):
         """Return a string representation of this object that can be evaled to execute the function call."""
-        argstring = ','.join(str(arg) for arg in self['args'])
-        kwargstring = ','.join('%s=%s' % (key,val) for (key,val) in self['kwargs'].iteritems())
+        argstring = '' if 'args' not in self else \
+                ','.join(str(arg) for arg in self['args'])
+        kwargstring = '' if 'kwargs' not in self else \
+                ','.join('%s=%s' % (key,val) for (key,val) in self['kwargs'].iteritems())
         if len(argstring) == 0:
             params = kwargstring
         elif len(kwargstring) == 0:
@@ -86,7 +90,7 @@ class FunctionCall(dict):
         return '%s(%s)' % (self['name'], params)
 
 
-class RedisRPCClient(object):
+class Client(object):
     """Calls remote functions using Redis as a message queue."""
 
     def __init__(self, redis_server, input_queue):
@@ -97,20 +101,20 @@ class RedisRPCClient(object):
         function_call = FunctionCall(method_name, args, kwargs)
         response_queue = self.input_queue + ':rpc:' + random_string()
         rpc_request = dict(function_call=function_call, response_queue=response_queue)
-        if DEBUG: print('RPC Request: %r' % rpc_request)
-        rpc_request = json.dumps(rpc_request)
-        self.redis_server.rpush(self.input_queue, rpc_request)
+        message = json.dumps(rpc_request)
+        if DEBUG: print('RPC Request: %s' % message)
+        self.redis_server.rpush(self.input_queue, message)
         timeout_s = 0 # Block forever.
         message_queue, message = self.redis_server.blpop(response_queue, timeout_s)
         assert message_queue == response_queue
+        if DEBUG: print('RPC Response: %s\n' % message)
         rpc_response = json.loads(message)
-        if DEBUG: print('RPC Response: %r\n' % rpc_response)
         exception = rpc_response.get('exception')
         if exception is not None:
-            if DEBUG: print('exception: %r\n' % exception)
+            if DEBUG: print('exception: %s\n' % exception)
             raise RemoteException(exception)
         if 'return_value' not in rpc_response:
-            raise RempteException('malformed RPC Response message: %r' % rpc_response)
+            raise RemoteException('Malformed RPC Response message: %s' % rpc_response)
         return rpc_response['return_value']
 
     def __getattr__(self, name):
@@ -118,7 +122,7 @@ class RedisRPCClient(object):
         return curry(self.call, name)
 
 
-class RedisRPCServer(object):
+class Server(object):
     """Executes function calls received from a Redis queue."""
 
     def __init__(self, redis_server, input_queue, local_object):
@@ -130,8 +134,8 @@ class RedisRPCServer(object):
         while True:
             message_queue, message = self.redis_server.blpop(self.input_queue)
             assert message_queue == self.input_queue
+            if DEBUG: print('RPC Request: %s' % message)
             rpc_request = json.loads(message)
-            if DEBUG: print('RPC Request: %r' % rpc_request)
             response_queue = rpc_request['response_queue']
             function_call = FunctionCall.from_dict(rpc_request['function_call'])
             code = 'return_value = self.local_object.' + function_call.as_python_code()
@@ -142,9 +146,9 @@ class RedisRPCServer(object):
             except:
                 (type, value, traceback) = sys.exc_info()
                 rpc_response = dict(exception=repr(value))
-            if DEBUG: print('RPC Response: %r\n' % rpc_response)
-            rpc_response = json.dumps(rpc_response)
-            self.redis_server.rpush(response_queue, rpc_response)
+            message = json.dumps(rpc_response)
+            if DEBUG: print('RPC Response: %s\n' % message)
+            self.redis_server.rpush(response_queue, message)
 
 
 class RemoteException(Exception):

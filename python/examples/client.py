@@ -28,6 +28,6 @@ do_calculations(calculator)
 
 # 2. Remote object, should act like local object
 redis_server = redis.Redis()
-calculator = redisrpc.RedisRPCClient(redis_server, 'calc')
+calculator = redisrpc.Client(redis_server, 'calc')
 do_calculations(calculator)
 print('success!')
