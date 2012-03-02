@@ -1,12 +1,20 @@
 #!/usr/bin/env python
 
+import logging
+import sys
+
 import redis
 import redisrpc
 
 import calc
 
-#redisrpc.DEBUG=True
+
+# Direct all RedisPRC logging messages to stderr.
+logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+
 
 redis_server = redis.Redis()
-server = redisrpc.Server(redis_server, 'calc', calc.Calculator())
+input_queue = 'calc'
+local_object = calc.Calculator()
+server = redisrpc.Server(redis_server, input_queue, local_object)
 server.run()

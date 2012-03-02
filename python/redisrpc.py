@@ -15,6 +15,7 @@
 
 
 import json
+import logging
 import random
 import string
 import sys
@@ -27,10 +28,6 @@ __all__ = [
     'Server',
     'RemoteException'
 ]
-
-
-# Set this to True to print additional debugging information.
-DEBUG=False
 
 
 def random_string(size=8, chars=string.ascii_uppercase + string.digits):
@@ -66,7 +63,7 @@ class FunctionCall(dict):
         kwargs = dictionary.get('kwargs')
         return FunctionCall(name, args, kwargs)
 
-    def __init__(self, name, args=(), kwargs={}):
+    def __init__(self, name, args=None, kwargs=None):
         """Create a new FunctionCall from a method name, an optional argument tuple, and an optional keyword argument
         dictionary."""
         self['name'] = name
@@ -102,16 +99,15 @@ class Client(object):
         response_queue = self.input_queue + ':rpc:' + random_string()
         rpc_request = dict(function_call=function_call, response_queue=response_queue)
         message = json.dumps(rpc_request)
-        if DEBUG: print('RPC Request: %s' % message)
+        logging.debug('RPC Request: %s' % message)
         self.redis_server.rpush(self.input_queue, message)
         timeout_s = 0 # Block forever.
         message_queue, message = self.redis_server.blpop(response_queue, timeout_s)
         assert message_queue == response_queue
-        if DEBUG: print('RPC Response: %s\n' % message)
+        logging.debug('RPC Response: %s' % message)
         rpc_response = json.loads(message)
         exception = rpc_response.get('exception')
         if exception is not None:
-            if DEBUG: print('exception: %s\n' % exception)
             raise RemoteException(exception)
         if 'return_value' not in rpc_response:
             raise RemoteException('Malformed RPC Response message: %s' % rpc_response)
@@ -134,12 +130,11 @@ class Server(object):
         while True:
             message_queue, message = self.redis_server.blpop(self.input_queue)
             assert message_queue == self.input_queue
-            if DEBUG: print('RPC Request: %s' % message)
+            logging.debug('RPC Request: %s' % message)
             rpc_request = json.loads(message)
             response_queue = rpc_request['response_queue']
             function_call = FunctionCall.from_dict(rpc_request['function_call'])
             code = 'return_value = self.local_object.' + function_call.as_python_code()
-            if DEBUG: print(code)
             try:
                 exec(code)
                 rpc_response = dict(return_value=return_value)
@@ -147,7 +142,7 @@ class Server(object):
                 (type, value, traceback) = sys.exc_info()
                 rpc_response = dict(exception=repr(value))
             message = json.dumps(rpc_response)
-            if DEBUG: print('RPC Response: %s\n' % message)
+            logging.debug('RPC Response: %s' % message)
             self.redis_server.rpush(response_queue, message)
 
 

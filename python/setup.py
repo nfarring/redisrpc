@@ -1,7 +1,7 @@
-from distutils.core import setup
+from setuptools import setup
 
 # Ref: http://semver.org/
-VERSION='0.3.1'
+VERSION='0.3.2'
 
 AUTHOR='Nathan Farrington'
 AUTHOR_EMAIL='nfarring@gmail.com'
@@ -18,6 +18,10 @@ CLASSIFIERS=[
 ]
 DESCRIPTION='Lightweight RPC using Redis'
 DOWNLOAD_URL='https://github.com/downloads/nfarring/redisrpc/redisrpc-python-%s.tar.gz' % VERSION
+INSTALL_REQUIRES=[
+    'distribute',
+    'redis'
+]
 KEYWORDS=['Redis','RPC']
 with open('README.rst','r') as f:
     LONG_DESCRIPTION=''.join(f.readlines())
@@ -25,9 +29,6 @@ MAINTAINER=AUTHOR
 MAINTAINER_EMAIL=AUTHOR_EMAIL
 NAME='redisrpc'
 PY_MODULES=['redisrpc']
-REQUIRES=[
-    'redis (>=2.0.0)'
-]
 URL='http://github.com/nfarring/redisrpc'
 
 setup(
@@ -36,13 +37,13 @@ setup(
     classifiers=CLASSIFIERS,
     description=DESCRIPTION,
     download_url=DOWNLOAD_URL,
+    install_requires=INSTALL_REQUIRES,
     keywords=KEYWORDS,
     long_description=LONG_DESCRIPTION,
     maintainer=MAINTAINER,
     maintainer_email=MAINTAINER_EMAIL,
     name=NAME,
     py_modules=PY_MODULES,
-    requires=REQUIRES,
     url=URL,
     version=VERSION
 )

@@ -1,13 +1,18 @@
 #!/usr/bin/env python
 
+import logging
 import traceback
+import sys
 
 import redis
 import redisrpc
 
 import calc
 
-#redisrpc.DEBUG=True
+
+# Direct all RedisPRC logging messages to stderr.
+logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+
 
 def do_calculations(calculator):
     calculator.clr()
@@ -22,12 +27,14 @@ def do_calculations(calculator):
     except (AttributeError, redisrpc.RemoteException):
         pass
 
+
 # 1. Local object
 calculator = calc.Calculator()
 do_calculations(calculator)
 
 # 2. Remote object, should act like local object
 redis_server = redis.Redis()
-calculator = redisrpc.Client(redis_server, 'calc')
+input_queue = 'calc'
+calculator = redisrpc.Client(redis_server, input_queue)
 do_calculations(calculator)
 print('success!')
