@@ -1,6 +1,7 @@
 README.html
 # Ruby
 .rvmrc
+*.gem
 # PHP
 composer.lock
 composer.phar

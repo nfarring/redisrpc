@@ -1,47 +1,55 @@
 BASIC_TARGETS:=\
 	README.html
 
+RUBY_TARGETS:=
+
 PHP_TARGETS:=\
-	$(BASIC_TARGETS)\
 	composer.phar\
 	php/vendor
 
 PYTHON_TARGETS:=\
-	$(BASIC_TARGETS)\
 	python/LICENSE\
 	python/README.rst\
 	python/dist
-
-ALL_TARGETS:=\
-	$(BASIC_TARGETS)\
-	$(PHP_TARGETS)\
-	$(PYTHON_TARGETS)
 
 .PHONY: help
 help:
 	@echo 'Build Targets:'
 	@echo '  all'
+	@echo '  ruby'
 	@echo '  php'
 	@echo '  python'
 	@echo 'Clean Targets:'
 	@echo '  clean-all'
+	@echo '  clean-ruby'
 	@echo '  clean-php'
 	@echo '  clean-python'
 
 .PHONY: all
-all: $(ALL_TARGETS)
+all: basic ruby php python
 
 .PHONY: basic
 basic: $(BASIC_TARGETS)
 
+.PHONY: ruby
+ruby: basic $(RUBY_TARGETS)
+
 .PHONY: php
-php: $(PHP_TARGETS)
+php: basic $(PHP_TARGETS)
 
 .PHONY: python
-python: $(PYTHON_TARGETS)
+python: basic $(PYTHON_TARGETS)
 
 .PHONY: clean-all
-clean-all: clean-php clean-python
+clean-all: clean-basic clean-ruby clean-php clean-python
+
+.PHONY: clean-basic
+clean-basic:
+	@rm -rf $(BASIC_TARGETS)
+
+.PHONY: clean-ruby
+clean-ruby:
+	@rm -rf $(RUBY_TARGETS)
 
 .PHONY: clean-php
 clean-php:
@@ -62,6 +70,10 @@ clean-python:
 # Ref: https://github.com/alampros/Docter
 README.html: README.markdown
 	docs/github-flavored-markdown.rb $< >$@
+
+########################
+# Rules for Ruby Targets
+########################
 
 #######################
 # Rules for PHP Targets

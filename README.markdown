@@ -5,7 +5,7 @@ by Nathan Farrington
 <http://nathanfarrington.com>
 
 RedisRPC is the easiest to use RPC library in the world. (No small claim!) It
-has implementations in PHP and Python, with Ruby comming soon.
+has implementations in Ruby, PHP, and Python.
 
 Introduction
 ------------
@@ -27,7 +27,7 @@ performance; it lets you get something working immediately.
 
 Calculator Example
 ------------------
-Each language implementation uses the same client and server example based off
+Each library implementation uses the same client and server example based off
 of a mutable calculator object. The clients and servers from different
 languages are interoperable.
 
@@ -53,6 +53,33 @@ LPOP command instead of BLPOP. I currently do not need this feature and have
 not added support for this, but patches are welcome.*
 
 That's all there is to it!
+
+Ruby Usage
+----------
+
+### client.rb
+
+```ruby
+redis_server = Redis.new
+input_queue = 'calc'
+calculator = RedisRPC::Client.new redis_server, 'calc'
+calculator.clr
+calculator.add 5
+calculator.sub 3
+calculator.mul 4
+calculator.div 2
+assert calculator.val == 4
+```
+
+### server.rb
+
+```ruby
+redis_server = Redis.new
+input_queue = 'calc'
+local_object = Calculator.new
+server = RedisRPC::Server.new redis_server, input_queue, local_object
+server.run
+```
 
 PHP Usage
 ---------
@@ -112,6 +139,14 @@ server.run()
 
 Installation
 ------------
+
+### Ruby Installation
+
+The [redis-rb][redis-rb] library is required. Install using RubyGems:
+
+```ruby
+gem install redisrpc
+```
 
 ### PHP Installation
 
@@ -191,6 +226,10 @@ This software is available under the [GPLv3][GPLv3] or later.
 
 Changelog
 ----------
+Version 0.3.3
+
+* Ruby: Added a Ruby library implementation.
+
 Version 0.3.2
 
 * Fixed some formatting in README.markdown that was causing problems when
@@ -254,6 +293,8 @@ Version 0.1.0
 [JavaRMI]: https://en.wikipedia.org/wiki/Java_remote_method_invocation
 
 [Thrift]: https://en.wikipedia.org/wiki/Apache_Thrift
+
+[redis-rb]: https://github.com/ezmobius/redis-rb
 
 [Predis]: https://github.com/nrk/predis
 
