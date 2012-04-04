@@ -32,7 +32,8 @@ do_calculations calculator
 
 # 2. Remote object, should act like local object
 redis_server = Redis.new
-input_queue = 'calc'
-calculator = RedisRPC::Client.new redis_server, 'calc'
+message_queue = 'calc'
+timeout = 1
+calculator = RedisRPC::Client.new redis_server, message_queue, timeout
 do_calculations calculator
 puts 'success!'

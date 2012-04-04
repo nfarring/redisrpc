@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 
 # Ref: http://semver.org/
-VERSION = '0.3.3'
+VERSION = '0.3.4'
 
 DESCRIPTION = <<-EOS
 RedisRPC is the easiest to use RPC library in the world. (No small claim!) It
@@ -15,7 +15,7 @@ temporarily hold RPC request and response messages. These messages are encoded
 as JSON strings for portability.
 
 Many other RPC mechanisms are either programming language specific (e.g.
-JavaRMI or require boiler-plate code for explicit typing (e.g.  Thrift).
+Java RMI) or require boiler-plate code for explicit typing (e.g. Thrift).
 RedisRPC was designed to be extremely easy to use by eliminating boiler-plate
 code while also being programming language neutral.  High performance was not
 an initial goal of RedisRPC and other RPC libraries are likely to have better

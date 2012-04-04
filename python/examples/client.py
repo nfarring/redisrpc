@@ -5,6 +5,9 @@ import traceback
 import sys
 
 import redis
+
+# Allow this script to run without installing redisrpc.
+sys.path.append('..')
 import redisrpc
 
 import calc
@@ -34,7 +37,7 @@ do_calculations(calculator)
 
 # 2. Remote object, should act like local object
 redis_server = redis.Redis()
-input_queue = 'calc'
-calculator = redisrpc.Client(redis_server, input_queue)
+message_queue = 'calc'
+calculator = redisrpc.Client(redis_server, message_queue, timeout=1)
 do_calculations(calculator)
 print('success!')

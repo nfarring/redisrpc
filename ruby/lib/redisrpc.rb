@@ -24,6 +24,10 @@ module RedisRPC
     end
 
 
+    class TimeoutException<Exception
+    end
+
+
     class FunctionCall
 
         def initialize(args={})
@@ -45,22 +49,26 @@ module RedisRPC
 
     class Client
 
-        def initialize(redis_server, input_queue)
+        def initialize(redis_server, message_queue, timeout=0)
             @redis_server = redis_server
-            @input_queue = input_queue
+            @message_queue = message_queue
+            @timeout = timeout
         end
 
         def method_missing(sym, *args, &block)
             function_call = {'name' => sym.to_s, 'args' => args}
-            response_queue = @input_queue + ':rpc:' + rand_string
+            response_queue = @message_queue + ':rpc:' + rand_string
             rpc_request = {'function_call' => function_call, 'response_queue' => response_queue}
             message = JSON.generate rpc_request
             if $DEBUG
                 $stderr.puts 'RPC Request: ' + message
             end
-            @redis_server.rpush @input_queue, message
-            timeout_s = 0 # Block forever.
-            message_queue, message = @redis_server.blpop response_queue, timeout_s
+            @redis_server.rpush @message_queue, message
+            result = @redis_server.blpop response_queue, @timeout
+            if result.nil?
+                raise TimeoutException
+            end
+            message_queue, message = result
             if $DEBUG
                 if message_queue != response_queue
                     fail 'assertion failed'
@@ -91,17 +99,19 @@ module RedisRPC
 
     class Server
 
-        def initialize(redis_server, input_queue, local_object)
+        def initialize(redis_server, message_queue, local_object)
             @redis_server = redis_server
-            @input_queue = input_queue
+            @message_queue = message_queue
             @local_object = local_object
         end
 
         def run
+            # Flush the message queue.
+            @redis_server.del @message_queue
             loop do
-                message_queue, message = @redis_server.blpop @input_queue, 0
+                message_queue, message = @redis_server.blpop @message_queue, 0
                 if $DEBUG
-                    fail 'assertion failed' if message_queue != @input_queue
+                    fail 'assertion failed' if message_queue != @message_queue
                     $stderr.puts 'RPC Request: ' + message
                 end
                 rpc_request = JSON.parse(message)

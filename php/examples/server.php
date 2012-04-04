@@ -33,9 +33,9 @@ require '../vendor/.composer/autoload.php';
 require_once 'calc.php';
 
 $redis_server = new Predis\Client();
-$input_queue = 'calc';
+$message_queue = 'calc';
 $local_object = new Calculator();
-$server = new RedisRPC\Server($redis_server, $input_queue, $local_object);
+$server = new RedisRPC\Server($redis_server, $message_queue, $local_object);
 $server->run();
 
 ?>

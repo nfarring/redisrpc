@@ -26,7 +26,8 @@ import redis
 __all__ = [
     'Client',
     'Server',
-    'RemoteException'
+    'RemoteException',
+    'TimeoutException'
 ]
 
 
@@ -90,19 +91,21 @@ class FunctionCall(dict):
 class Client(object):
     """Calls remote functions using Redis as a message queue."""
 
-    def __init__(self, redis_server, input_queue):
+    def __init__(self, redis_server, message_queue, timeout=0):
         self.redis_server = redis_server
-        self.input_queue = input_queue
+        self.message_queue = message_queue
+        self.timeout = timeout
 
     def call(self, method_name, *args, **kwargs):
         function_call = FunctionCall(method_name, args, kwargs)
-        response_queue = self.input_queue + ':rpc:' + random_string()
+        response_queue = self.message_queue + ':rpc:' + random_string()
         rpc_request = dict(function_call=function_call, response_queue=response_queue)
         message = json.dumps(rpc_request)
         logging.debug('RPC Request: %s' % message)
-        self.redis_server.rpush(self.input_queue, message)
-        timeout_s = 0 # Block forever.
-        message_queue, message = self.redis_server.blpop(response_queue, timeout_s)
+        self.redis_server.rpush(self.message_queue, message)
+        result = self.redis_server.blpop(response_queue, self.timeout)
+        if result is None: raise TimeoutException()
+        message_queue, message = result
         assert message_queue == response_queue
         logging.debug('RPC Response: %s' % message)
         rpc_response = json.loads(message)
@@ -121,15 +124,17 @@ class Client(object):
 class Server(object):
     """Executes function calls received from a Redis queue."""
 
-    def __init__(self, redis_server, input_queue, local_object):
+    def __init__(self, redis_server, message_queue, local_object):
         self.redis_server = redis_server
-        self.input_queue = input_queue
+        self.message_queue = message_queue
         self.local_object = local_object
 
     def run(self):
+        # Flush the message queue.
+        self.redis_server.delete(self.message_queue)
         while True:
-            message_queue, message = self.redis_server.blpop(self.input_queue)
-            assert message_queue == self.input_queue
+            message_queue, message = self.redis_server.blpop(self.message_queue)
+            assert message_queue == self.message_queue
             logging.debug('RPC Request: %s' % message)
             rpc_request = json.loads(message)
             response_queue = rpc_request['response_queue']
@@ -148,4 +153,9 @@ class Server(object):
 
 class RemoteException(Exception):
     """Raised by an RPC client when an exception occurs on the RPC server."""
+    pass
+
+
+class TimeoutException(Exception):
+    """Raised by an RPC client when a timeout occurs."""
     pass

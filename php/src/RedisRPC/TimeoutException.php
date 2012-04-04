@@ -20,7 +20,7 @@ namespace RedisRPC;
 /**
  *
  */
-class RemoteException extends \Exception {
+class TimeoutException extends \Exception {
 }
 
 ?>

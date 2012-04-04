@@ -61,7 +61,7 @@ Ruby Usage
 
 ```ruby
 redis_server = Redis.new
-input_queue = 'calc'
+message_queue = 'calc'
 calculator = RedisRPC::Client.new redis_server, 'calc'
 calculator.clr
 calculator.add 5
@@ -75,9 +75,9 @@ assert calculator.val == 4
 
 ```ruby
 redis_server = Redis.new
-input_queue = 'calc'
+message_queue = 'calc'
 local_object = Calculator.new
-server = RedisRPC::Server.new redis_server, input_queue, local_object
+server = RedisRPC::Server.new redis_server, message_queue, local_object
 server.run
 ```
 
@@ -90,8 +90,8 @@ PHP Usage
 
 ```php
 $redis_server = new Predis\Client();
-$input_queue = 'calc';
-$calculator = new RedisRPC\Client($redis_server, $input_queue);
+$message_queue = 'calc';
+$calculator = new RedisRPC\Client($redis_server, $message_queue);
 $calculator->clr();
 $calculator->add(5);
 $calculator->sub(3);
@@ -104,9 +104,9 @@ assert($calculator->val() == 4);
 
 ```php
 $redis_server = new Predis\Client();
-$input_queue = 'calc';
+$message_queue = 'calc';
 $local_object = new Calculator();
-$server = new RedisRPC\Server($redis_server, $input_queue, $local_object);
+$server = new RedisRPC\Server($redis_server, $message_queue, $local_object);
 $server->run();
 ```
 
@@ -117,8 +117,8 @@ Python Usage
 
 ```python
 redis_server = redis.Redis()
-input_queue = 'calc'
-calculator = redisrpc.Client(redis_server, input_queue)
+message_queue = 'calc'
+calculator = redisrpc.Client(redis_server, message_queue)
 calculator.clr()
 calculator.add(5)
 calculator.sub(3)
@@ -131,9 +131,9 @@ assert calculator.val() == 4
 
 ```python
 redis_server = redis.Redis()
-input_queue = 'calc'
+message_queue = 'calc'
 local_object = calc.Calculator()
-server = redisrpc.Server(redis_server, input_queue, local_object)
+server = redisrpc.Server(redis_server, message_queue, local_object)
 server.run()
 ```
 
@@ -226,6 +226,12 @@ This software is available under the [GPLv3][GPLv3] or later.
 
 Changelog
 ----------
+Version 0.3.4
+
+* Client now supports optional timeout.
+* Server now deletes message queue when starting.
+* PHP: Fixed exception handling.
+
 Version 0.3.3
 
 * Ruby: Added a Ruby library implementation.

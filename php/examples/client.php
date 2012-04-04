@@ -47,8 +47,9 @@ do_calculations($calculator);
 
 // 2. Remote object, should act like local object
 $redis_server = new Predis\Client();
-$input_queue = 'calc';
-$calculator = new RedisRPC\Client($redis_server, $input_queue);
+$message_queue = 'calc';
+$timeout = 1;
+$calculator = new RedisRPC\Client($redis_server, $message_queue, $timeout);
 do_calculations($calculator);
 print "success!\n";
 

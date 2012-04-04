@@ -40,19 +40,19 @@ if (!function_exists("debug_print")) {
 class Server {
 
     private $redis_server;
-    private $input_queue;
+    private $message_queue;
     private $local_object;
 
     /**
      * Initializes a new server.
      *
      * @param mixed $redis_server Handle to a Redis server object.
-     * @param string $input_queue Name of Redis message queue.
+     * @param string $message_queue Name of Redis message queue.
      * @param mixed $local_object Handle to local wrapped object that will receive the RPC calls.
      */
-    public function __construct($redis_server, $input_queue, $local_object) {
+    public function __construct($redis_server, $message_queue, $local_object) {
         $this->redis_server = $redis_server;
-        $this->input_queue = $input_queue;
+        $this->message_queue = $message_queue;
         $this->local_object = $local_object;
     }
 
@@ -60,13 +60,14 @@ class Server {
      * Starts the server.
      */
     public function run() {
-        $timeout_s = 0;
+        $this->redis_server->del($this->message_queue);
+        $timeout = 0;
         while (1) {
             # Pop a message from the queue.
             # Decode the message.
             # Check that the function exists.
-            list($message_queue, $message) = $this->redis_server->blpop($this->input_queue, $timeout_s);
-            assert($message_queue == $this->input_queue);
+            list($message_queue, $message) = $this->redis_server->blpop($this->message_queue, $timeout);
+            assert($message_queue == $this->message_queue);
             debug_print("RPC Request: $message");
             $rpc_request = json_decode($message);
             $response_queue = $rpc_request->response_queue;

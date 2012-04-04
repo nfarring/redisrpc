@@ -71,11 +71,12 @@ function random_string($size, $valid_chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij
 class Client {
 
     private $redis_server;
-    private $input_queue;
+    private $message_queue;
 
-    public function __construct($redis_server, $input_queue) {
+    public function __construct($redis_server, $message_queue, $timeout = 0) {
         $this->redis_server = $redis_server;
-        $this->input_queue = $input_queue;
+        $this->message_queue = $message_queue;
+        $this->timeout = $timeout;
     }
 
     public function __call($name, $arguments) {
@@ -87,28 +88,29 @@ class Client {
         if (count($arguments) > 0) {
             $function_call['args'] = $arguments;
         }
-        $response_queue = "$this->input_queue:rpc:" . random_string(8);
+        $response_queue = "$this->message_queue:rpc:" . random_string(8);
         $rpc_request = array(
             'function_call' => $function_call,
             'response_queue' => $response_queue
         );
         $message = json_encode($rpc_request);
         debug_print("RPC Request: $message");
-        $this->redis_server->rpush($this->input_queue, $message);
-        $timeout_s = 0; # Block forever.
-        list($message_queue, $message) = $this->redis_server->blpop($response_queue, $timeout_s);
+        $this->redis_server->rpush($this->message_queue, $message);
+        $result = $this->redis_server->blpop($response_queue, $this->timeout);
+        if ($result == NULL) {
+            throw new TimeoutException();
+        }
+        list($message_queue, $message) = $result;
         assert($message_queue == $response_queue);
         debug_print("RPC Response: $message\n");
         $rpc_response = json_decode($message);
+        if (array_key_exists('exception',$rpc_response) && $rpc_response->exception != NULL) {
+            throw new RemoteException($rpc_response->exception);
+        }
+        if (!array_key_exists('return_value',$rpc_response)) {
+            throw new RemoteException('Malformed RPC Response message');
+        }
         return $rpc_response->return_value;
-#        exception = rpc_response.get('exception')
-#        if exception is not None:
-#            if DEBUG: print('exception: %r\n' % exception)
-#            raise RemoteException(exception)
-#        if 'return_value' not in rpc_response:
-#            raise RempteException('malformed RPC Response message: %r' % rpc_response)
-#        return rpc_response['return_value']
-
     }
 }
 

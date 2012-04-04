@@ -1,7 +1,7 @@
 from setuptools import setup
 
 # Ref: http://semver.org/
-VERSION='0.3.3'
+VERSION='0.3.4'
 
 AUTHOR='Nathan Farrington'
 AUTHOR_EMAIL='nfarring@gmail.com'
