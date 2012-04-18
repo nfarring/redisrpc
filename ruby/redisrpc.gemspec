@@ -1,7 +1,6 @@
 # -*- encoding: utf-8 -*-
 
-# Ref: http://semver.org/
-VERSION = '0.3.4'
+require File.expand_path('../lib/redisrpc/version', __FILE__)
 
 DESCRIPTION = <<-EOS
 RedisRPC is the easiest to use RPC library in the world. (No small claim!) It
@@ -35,5 +34,5 @@ Gem::Specification.new do |s|
   s.license = 'GPLv3'
   s.name = 'redisrpc'
   s.summary = 'Lightweight RPC for Redis'
-  s.version = VERSION
+  s.version = RedisRPC::VERSION
 end
