@@ -31,19 +31,12 @@ module RedisRPC
     class FunctionCall
 
         def initialize(args={})
-            @name = args['name']
+            @method = args['name'].to_sym
             @args = args['args']
         end
 
-        def as_ruby_code
-            argstring = ''
-            if @args != nil
-                argstring += ' '
-                argstring += @args.join ','
-            end
-            return @name + argstring
-        end
-
+        attr_reader :method
+        attr_reader :args
     end
 
 
@@ -117,9 +110,8 @@ module RedisRPC
                 rpc_request = JSON.parse(message)
                 response_queue = rpc_request['response_queue']
                 function_call = FunctionCall.new(rpc_request['function_call'])
-                code = '@local_object.' + function_call.as_ruby_code
                 begin
-                    return_value = eval code
+                    return_value = @local_object.send( function_call.method, *function_call.args )
                     rpc_response = {'return_value' => return_value}
                 rescue => err
                     rpc_response = {'exception' => err}
