@@ -84,10 +84,10 @@ module RedisRPC
                 raise RemoteException, 'Malformed RPC Response message: ' + rpc_response
             end
             return rpc_response['return_value']
-        end 
+        end
 
-        def rand_string(size=8, charset=%w{ 1 2 3 4 5 6 7 8 9 0 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z})
-            return (0...size).map{ charset.to_a[rand(charset.size)] }.join
+        def rand_string(size=8)
+            return rand(36**size).to_s(36).upcase.rjust(size,'0')
         end
 
         def respond_to?(sym)
