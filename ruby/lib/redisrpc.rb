@@ -112,7 +112,7 @@ module RedisRPC
                 begin
                     return_value = @local_object.send( function_call.method, *function_call.args )
                     rpc_response = {'return_value' => return_value}
-                rescue => err
+                rescue Object => err
                     rpc_response = {'exception' => err}
                 end
                 message = MultiJson.dump rpc_response
