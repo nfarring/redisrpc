@@ -106,8 +106,6 @@ module RedisRPC
         end
 
         def run
-            # Flush the message queue.
-            @redis_server.del @message_queue
             loop do
                 message_queue, message = @redis_server.blpop @message_queue, 0
                 if $DEBUG
@@ -132,6 +130,14 @@ module RedisRPC
             end
         end
 
+        def run!
+            flush_queue!
+            run
+        end
+
+        def flush_queue!
+            @redis_server.del @message_queue
+        end
     end
 
 
