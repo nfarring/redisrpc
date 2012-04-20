@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-require 'json'
+require 'multi_json'
 
 require 'redis'
 
@@ -52,7 +52,7 @@ module RedisRPC
             function_call = {'name' => sym.to_s, 'args' => args}
             response_queue = @message_queue + ':rpc:' + rand_string
             rpc_request = {'function_call' => function_call, 'response_queue' => response_queue}
-            message = JSON.generate rpc_request
+            message = MultiJson.dump rpc_request
             if $DEBUG
                 $stderr.puts 'RPC Request: ' + message
             end
@@ -68,7 +68,7 @@ module RedisRPC
                 end
                 $stderr.puts 'RPC Response: ' + message
             end
-            rpc_response = JSON.parse message
+            rpc_response = MultiJson.load message
             exception = rpc_response['exception']
             if exception != nil
                 raise RemoteException, exception
@@ -105,7 +105,7 @@ module RedisRPC
                     fail 'assertion failed' if message_queue != @message_queue
                     $stderr.puts 'RPC Request: ' + message
                 end
-                rpc_request = JSON.parse(message)
+                rpc_request = MultiJson.load message
                 response_queue = rpc_request['response_queue']
                 function_call = FunctionCall.new(rpc_request['function_call'])
                 begin
@@ -114,7 +114,7 @@ module RedisRPC
                 rescue => err
                     rpc_response = {'exception' => err}
                 end
-                message = JSON.generate rpc_response
+                message = MultiJson.dump rpc_response
                 if $DEBUG
                     $stderr.puts 'RPC Response: ' + message
                 end
