@@ -2,8 +2,8 @@
 
 require 'redis'
 
-require_relative '../lib/redisrpc'
-require_relative './calc'
+require File.expand_path('../../lib/redisrpc', __FILE__)
+require File.expand_path('../calc', __FILE__)
 
 def assert(cond)
     if not cond
