@@ -13,8 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-require 'redisrpc/version'
-require 'json'
+require File.expand_path('../redisrpc/version',__FILE__)
+require 'multi_json'
 
 require 'redis'
 
@@ -32,19 +32,12 @@ module RedisRPC
     class FunctionCall
 
         def initialize(args={})
-            @name = args['name']
+            @method = args['name'].to_sym
             @args = args['args']
         end
 
-        def as_ruby_code
-            argstring = ''
-            if @args != nil
-                argstring += ' '
-                argstring += @args.join ','
-            end
-            return @name + argstring
-        end
-
+        attr_reader :method
+        attr_reader :args
     end
 
 
@@ -60,7 +53,7 @@ module RedisRPC
             function_call = {'name' => sym.to_s, 'args' => args}
             response_queue = @message_queue + ':rpc:' + rand_string
             rpc_request = {'function_call' => function_call, 'response_queue' => response_queue}
-            message = JSON.generate rpc_request
+            message = MultiJson.dump rpc_request
             if $DEBUG
                 $stderr.puts 'RPC Request: ' + message
             end
@@ -76,7 +69,7 @@ module RedisRPC
                 end
                 $stderr.puts 'RPC Response: ' + message
             end
-            rpc_response = JSON.parse message
+            rpc_response = MultiJson.load message
             exception = rpc_response['exception']
             if exception != nil
                 raise RemoteException, exception
@@ -85,10 +78,10 @@ module RedisRPC
                 raise RemoteException, 'Malformed RPC Response message: ' + rpc_response
             end
             return rpc_response['return_value']
-        end 
+        end
 
-        def rand_string(size=8, charset=%w{ 1 2 3 4 5 6 7 8 9 0 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z})
-            return (0...size).map{ charset.to_a[rand(charset.size)] }.join
+        def rand_string(size=8)
+            return rand(36**size).to_s(36).upcase.rjust(size,'0')
         end
 
         def respond_to?(sym)
@@ -107,25 +100,22 @@ module RedisRPC
         end
 
         def run
-            # Flush the message queue.
-            @redis_server.del @message_queue
             loop do
                 message_queue, message = @redis_server.blpop @message_queue, 0
                 if $DEBUG
                     fail 'assertion failed' if message_queue != @message_queue
                     $stderr.puts 'RPC Request: ' + message
                 end
-                rpc_request = JSON.parse(message)
+                rpc_request = MultiJson.load message
                 response_queue = rpc_request['response_queue']
                 function_call = FunctionCall.new(rpc_request['function_call'])
-                code = '@local_object.' + function_call.as_ruby_code
                 begin
-                    return_value = eval code
+                    return_value = @local_object.send( function_call.method, *function_call.args )
                     rpc_response = {'return_value' => return_value}
                 rescue => err
                     rpc_response = {'exception' => err}
                 end
-                message = JSON.generate rpc_response
+                message = MultiJson.dump rpc_response
                 if $DEBUG
                     $stderr.puts 'RPC Response: ' + message
                 end
@@ -133,6 +123,14 @@ module RedisRPC
             end
         end
 
+        def run!
+            flush_queue!
+            run
+        end
+
+        def flush_queue!
+            @redis_server.del @message_queue
+        end
     end
 
 
