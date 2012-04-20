@@ -50,6 +50,7 @@ clean-basic:
 .PHONY: clean-ruby
 clean-ruby:
 	@rm -rf $(RUBY_TARGETS)
+	@rm -rf ruby/*.gem
 
 .PHONY: clean-php
 clean-php:

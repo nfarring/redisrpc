@@ -226,6 +226,14 @@ This software is available under the [GPLv3][GPLv3] or later.
 
 Changelog
 ----------
+Version 0.3.5
+
+* Ruby: feature: use multi_json gem  [Ryan Biesemeyer]
+* Ruby: feature: server.run! flushes queue but server.run does not  [Ryan Biesemeyer]
+* Ruby: performance: only one call to rand instead of eight  [Ryan Biesemeyer]
+* Ruby: bugfix: RedisRPC::VERSION  [Ryan Biesemeyer]
+* Ruby: security: remove eval  [Ryan Biesemeyer]
+
 Version 0.3.4
 
 * Client now supports optional timeout.
