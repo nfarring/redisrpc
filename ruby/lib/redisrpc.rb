@@ -49,6 +49,7 @@ module RedisRPC
       response_queue = @message_queue + ':rpc:' + rand_string
       rpc_request = {'function_call' => function_call, 'response_queue' => response_queue}
       rpc_raw_request = MultiJson.dump rpc_request
+
       # transport
       @redis_server.rpush @message_queue, rpc_raw_request
       message_queue, rpc_raw_response = @redis_server.blpop response_queue, @timeout
@@ -115,7 +116,7 @@ module RedisRPC
         return_value = @local_object.send( function_call['name'].to_sym, *function_call['args'] )
         rpc_response = {'return_value' => return_value}
       rescue Object => err
-        rpc_response = {'exception' => err.to_s}
+        rpc_response = {'exception' => err.to_s, 'backtrace' => err.backtrace}
       end
 
       # response tansport
