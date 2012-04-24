@@ -20,118 +20,117 @@ require 'redis'
 
 module RedisRPC
 
+  class RemoteException < Exception; end
+  class TimeoutException < Exception; end
+  class MalformedResponseException < RemoteException
+    def initialize(response)
+      super "Malformed RPC Response message: #{response.inspect}"
+    end
+  end
+  class MalformedRequestException < ArgumentError
+    def initialize(reason)
+      super "Malformed RPC Request: #{reason.inspect}"
+    end
+  end
 
-    class RemoteException<Exception
+  class Client
+    def initialize( redis_server, message_queue, timeout=0 )
+      @redis_server = redis_server
+      @message_queue = message_queue
+      @timeout = timeout
     end
 
+    alias :send! :send
+    def send( method_name, *args)
+      raise MalformedRequestException, 'block not allowed over RPC' if block_given?
 
-    class TimeoutException<Exception
+      # request setup
+      function_call = {'name' => method_name.to_s, 'args' => args}
+      response_queue = @message_queue + ':rpc:' + rand_string
+      rpc_request = {'function_call' => function_call, 'response_queue' => response_queue}
+      rpc_raw_request = MultiJson.dump rpc_request
+      # transport
+      @redis_server.rpush @message_queue, rpc_raw_request
+      message_queue, rpc_raw_response = @redis_server.blpop response_queue, @timeout
+      raise TimeoutException if rpc_raw_response.nil?
+
+      # response handling
+      rpc_response = MultiJson.load rpc_raw_response
+      raise RemoteException, rpc_response['exception'] if rpc_response.has_key? 'exception'
+      raise MalformedResponseException, rpc_response unless rpc_response.has_key? 'return_value'
+      return rpc_response['return_value']
+
+    rescue TimeoutException
+      # stale request cleanup
+      @redis_server.lrem @message_queue, 0, rpc_raw_request
+      raise $!
     end
 
+    alias :method_missing :send
 
-    class FunctionCall
-
-        def initialize(args={})
-            @method = args['name'].to_sym
-            @args = args['args']
-        end
-
-        attr_reader :method
-        attr_reader :args
+    def respond_to?( method_name )
+      send( :respond_to?, method_name )
     end
 
+    private
 
-    class Client
+    def rand_string(size=8)
+      return rand(36**size).to_s(36).upcase.rjust(size,'0')
+    end
+  end
 
-        def initialize(redis_server, message_queue, timeout=0)
-            @redis_server = redis_server
-            @message_queue = message_queue
-            @timeout = timeout
-        end
-
-        def method_missing(sym, *args, &block)
-            function_call = {'name' => sym.to_s, 'args' => args}
-            response_queue = @message_queue + ':rpc:' + rand_string
-            rpc_request = {'function_call' => function_call, 'response_queue' => response_queue}
-            message = MultiJson.dump rpc_request
-            if $DEBUG
-                $stderr.puts 'RPC Request: ' + message
-            end
-            @redis_server.rpush @message_queue, message
-            result = @redis_server.blpop response_queue, @timeout
-            if result.nil?
-                raise TimeoutException
-            end
-            message_queue, message = result
-            if $DEBUG
-                if message_queue != response_queue
-                    fail 'assertion failed'
-                end
-                $stderr.puts 'RPC Response: ' + message
-            end
-            rpc_response = MultiJson.load message
-            exception = rpc_response['exception']
-            if exception != nil
-                raise RemoteException, exception
-            end
-            if not rpc_response.has_key? 'return_value'
-                raise RemoteException, 'Malformed RPC Response message: ' + rpc_response
-            end
-            return rpc_response['return_value']
-        end
-
-        def rand_string(size=8)
-            return rand(36**size).to_s(36).upcase.rjust(size,'0')
-        end
-
-        def respond_to?(sym)
-            return true
-        end
-
+  class Server
+    def initialize( redis_server, message_queue, local_object, timeout=nil )
+      @redis_server = redis_server
+      @message_queue = message_queue
+      @local_object = local_object
+      @timeout = timeout
     end
 
-
-    class Server
-
-        def initialize(redis_server, message_queue, local_object)
-            @redis_server = redis_server
-            @message_queue = message_queue
-            @local_object = local_object
-        end
-
-        def run
-            loop do
-                message_queue, message = @redis_server.blpop @message_queue, 0
-                if $DEBUG
-                    fail 'assertion failed' if message_queue != @message_queue
-                    $stderr.puts 'RPC Request: ' + message
-                end
-                rpc_request = MultiJson.load message
-                response_queue = rpc_request['response_queue']
-                function_call = FunctionCall.new(rpc_request['function_call'])
-                begin
-                    return_value = @local_object.send( function_call.method, *function_call.args )
-                    rpc_response = {'return_value' => return_value}
-                rescue Object => err
-                    rpc_response = {'exception' => err}
-                end
-                message = MultiJson.dump rpc_response
-                if $DEBUG
-                    $stderr.puts 'RPC Response: ' + message
-                end
-                @redis_server.rpush response_queue, message
-            end
-        end
-
-        def run!
-            flush_queue!
-            run
-        end
-
-        def flush_queue!
-            @redis_server.del @message_queue
-        end
+    def run
+      loop{ run_one }
     end
 
+    def run!
+      flush_queue!
+      run
+    end
 
+    def flush_queue!
+      @redis_server.del @message_queue
+    end
+
+    private
+
+    def run_one
+      # request setup
+      message_queue, rpc_raw_request = @redis_server.blpop @message_queue, timeout
+      return nil if rpc_raw_request.nil?
+      rpc_request = MultiJson.load rpc_raw_request
+      response_queue = rpc_request['response_queue']
+      function_call = rpc_request['function_call']
+
+      # request execution
+      begin
+        return_value = @local_object.send( function_call['name'].to_sym, *function_call['args'] )
+        rpc_response = {'return_value' => return_value}
+      rescue Object => err
+        rpc_response = {'exception' => err.to_s}
+      end
+
+      # response tansport
+      rpc_raw_response = MultiJson.dump rpc_response
+      @redis_server.multi do
+        @redis_server.rpush response_queue, rpc_raw_response
+        @redis_server.expire response_queue, 1
+      end
+      true
+    end
+
+    def timeout
+      @timeout or
+      $REDISRPC_SERVER_TIMEOUT or
+      0
+    end
+  end
 end
