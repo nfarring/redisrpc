@@ -1,5 +1,6 @@
 class Calculator
     # A simple, mutable calculator used for testing.
+    # referenced explicitly in ../spec/calculator.spec.rb
     
     def initialize
         @acc = 0.0
