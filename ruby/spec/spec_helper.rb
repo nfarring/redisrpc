@@ -7,6 +7,11 @@ rescue Bundler::BundlerError => e
   exit e.status_code
 end
 
+def MultiJson.default_adapter
+  :ok_json
+end
+
+
 RSpec.configure do |config|
   config.before :suite do
     raise 'redis-server must be on your path to run this test' if `which redis-server`.empty?
