@@ -14,7 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 require File.expand_path('../redisrpc/version',__FILE__)
-require 'multi_json'
+require File.expand_path('../redisrpc/multi_json',__FILE__)
 
 require 'redis'
 
