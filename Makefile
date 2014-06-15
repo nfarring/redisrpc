@@ -24,6 +24,8 @@ help:
 	@echo '  clean-ruby'
 	@echo '  clean-php'
 	@echo '  clean-python'
+	@echo 'Test Targets:'
+	@echo '  test-python'
 
 .PHONY: all
 all: basic ruby php python
@@ -61,8 +63,15 @@ clean-php:
 clean-python:
 	@rm -rf $(PYTHON_TARGETS)
 	@rm -rf python/*.pyc python/examples/*.pyc
+	@rm -rf python/*.egg
+	@rm -rf python/*.log
 	@rm -rf python/build
 	@rm -rf python/redisrpc.egg-info
+	@rm -rf python/.tox
+
+.PHONY: test-python
+test-python: python
+	cd python && tox
 
 #########################
 # Rules for Basic Targets

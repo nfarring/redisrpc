@@ -1,10 +1,11 @@
+# Ref: http://semver.org/
+VERSION='0.3.6p1'
+
+import sys
 from setuptools import setup
 
-# Ref: http://semver.org/
-VERSION='0.3.5'
-
 AUTHOR='Nathan Farrington'
-AUTHOR_EMAIL='nfarring@gmail.com'
+AUTHOR_EMAIL='nathan@nathanfarrington.com'
 CLASSIFIERS=[
     'Development Status :: 4 - Beta',
     'Environment :: Other Environment',
@@ -16,11 +17,12 @@ CLASSIFIERS=[
     'Topic :: Software Development :: Object Brokering',
     'Topic :: System :: Distributed Computing'
 ]
+CMDCLASS={'test': Tox}
 DESCRIPTION='Lightweight RPC using Redis'
 DOWNLOAD_URL='https://github.com/downloads/nfarring/redisrpc/redisrpc-python-%s.tar.gz' % VERSION
 INSTALL_REQUIRES=[
     'distribute',
-    'redis'
+    'redis',
 ]
 KEYWORDS=['Redis','RPC']
 with open('README.rst','r') as f:
@@ -29,12 +31,18 @@ MAINTAINER=AUTHOR
 MAINTAINER_EMAIL=AUTHOR_EMAIL
 NAME='redisrpc'
 PY_MODULES=['redisrpc']
+TESTS_REQUIRE=[
+    'pytest',
+    'pytest-dbfixtures',
+    'tox',
+]
 URL='http://github.com/nfarring/redisrpc'
 
 setup(
     author=AUTHOR,
     author_email=AUTHOR_EMAIL,
     classifiers=CLASSIFIERS,
+    cmdclass=CMDCLASS,
     description=DESCRIPTION,
     download_url=DOWNLOAD_URL,
     install_requires=INSTALL_REQUIRES,
@@ -44,6 +52,7 @@ setup(
     maintainer_email=MAINTAINER_EMAIL,
     name=NAME,
     py_modules=PY_MODULES,
+    tests_require=TESTS_REQUIRE,
     url=URL,
     version=VERSION
 )
