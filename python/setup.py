@@ -1,8 +1,9 @@
-# Ref: http://semver.org/
-VERSION='0.3.6p2'
-
 import sys
 from setuptools import setup
+
+# Ref: http://semver.org/
+with open("VERSION", "rt") as in_file:
+    VERSION = in_file.read().strip()
 
 AUTHOR='Nathan Farrington'
 AUTHOR_EMAIL='nathan@nathanfarrington.com'

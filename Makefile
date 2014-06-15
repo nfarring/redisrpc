@@ -8,6 +8,7 @@ PHP_TARGETS:=\
 	php/vendor
 
 PYTHON_TARGETS:=\
+	python/VERSION\
 	python/LICENSE\
 	python/README.rst\
 	python/dist
@@ -98,6 +99,9 @@ php/vendor: composer.phar
 ##########################
 # Rules for Python Targets
 ##########################
+
+python/VERSION: VERSION
+	cp -a $< $@
 
 python/LICENSE: LICENSE
 	cp -a $< $@

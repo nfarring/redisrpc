@@ -8,8 +8,10 @@ composer.phar
 php/vendor
 # Python
 *.pyc
+python/.tox
 python/LICENSE
 python/README.rst
+python/VERSION
 python/build
 python/dist
 python/redisrpc.egg-info
