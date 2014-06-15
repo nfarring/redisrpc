@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 import logging
 import sys
 
@@ -14,7 +15,6 @@ import calc
 
 # Direct all RedisPRC logging messages to stderr.
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
-
 
 redis_server = redis.Redis()
 message_queue = 'calc'

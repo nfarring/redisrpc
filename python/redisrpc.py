@@ -16,6 +16,7 @@
 
 import json
 import logging
+import pickle
 import random
 import string
 import sys
@@ -90,29 +91,72 @@ class FunctionCall(dict):
         return '%s(%s)' % (self['name'], params)
 
 
+def decode_message(message):
+    """Returns a (transport, decoded_message) pair."""
+    # Try JSON, then try Python pickle, then fail.
+    try:
+        return JSONTransport.create(), json.loads(message)
+    except:
+        pass
+    return PickleTransport.create(), pickle.loads(message)
+
+
+class JSONTransport(object):
+    """Cross platform transport."""
+    _singleton = None
+    @classmethod
+    def create(cls):
+        if cls._singleton is None:
+            cls._singleton = JSONTransport()
+        return cls._singleton
+    def dumps(self, obj):
+        return json.dumps(obj)
+    def loads(self, obj):
+        return json.loads(obj)
+
+
+class PickleTransport(object):
+    """Only works with Python clients and servers."""
+    _singleton = None
+    @classmethod
+    def create(cls):
+        if cls._singleton is None:
+            cls._singleton = PickleTransport()
+        return cls._singleton
+    def dumps(self, obj):
+        return pickle.dumps(obj, protocol=pickle.HIGHEST_PROTOCOL)
+    def loads(self, obj):
+        return pickle.loads(obj)
+ 
 class Client(object):
     """Calls remote functions using Redis as a message queue."""
 
-    def __init__(self, redis_server, message_queue, timeout=0):
+    def __init__(self, redis_server, message_queue, timeout=0, transport='json'):
         self.redis_server = redis_server
         self.message_queue = message_queue
         self.timeout = timeout
+        if transport == 'json':
+            self.transport = JSONTransport()
+        elif transport == 'pickle':
+            self.transport = PickleTransport()
+        else:
+            raise Exception('invalid transport {0}'.format(transport))
 
     def call(self, method_name, *args, **kwargs):
         function_call = FunctionCall(method_name, args, kwargs)
         response_queue = self.message_queue + ':rpc:' + random_string()
         rpc_request = dict(function_call=function_call, response_queue=response_queue)
-        message = json.dumps(rpc_request)
+        message = self.transport.dumps(rpc_request)
         logging.debug('RPC Request: %s' % message)
         self.redis_server.rpush(self.message_queue, message)
         result = self.redis_server.blpop(response_queue, self.timeout)
-        if result is None: raise TimeoutException()
+        if result is None:
+            raise TimeoutException()
         message_queue, message = result
         message_queue = message_queue.decode()
-        message = message.decode()
         assert message_queue == response_queue
         logging.debug('RPC Response: %s' % message)
-        rpc_response = json.loads(message)
+        rpc_response = self.transport.loads(message)
         exception = rpc_response.get('exception')
         if exception is not None:
             raise RemoteException(exception)
@@ -132,17 +176,16 @@ class Server(object):
         self.redis_server = redis_server
         self.message_queue = message_queue
         self.local_object = local_object
-
+ 
     def run(self):
         # Flush the message queue.
         self.redis_server.delete(self.message_queue)
         while True:
             message_queue, message = self.redis_server.blpop(self.message_queue)
             message_queue = message_queue.decode()
-            message = message.decode()
             assert message_queue == self.message_queue
             logging.debug('RPC Request: %s' % message)
-            rpc_request = json.loads(message)
+            transport, rpc_request = decode_message(message)
             response_queue = rpc_request['response_queue']
             function_call = FunctionCall.from_dict(rpc_request['function_call'])
             code = 'self.return_value = self.local_object.' + function_call.as_python_code()
@@ -152,7 +195,7 @@ class Server(object):
             except:
                 (type, value, traceback) = sys.exc_info()
                 rpc_response = dict(exception=repr(value))
-            message = json.dumps(rpc_response)
+            message = transport.dumps(rpc_response)
             logging.debug('RPC Response: %s' % message)
             self.redis_server.rpush(response_queue, message)
 
