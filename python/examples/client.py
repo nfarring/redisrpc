@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 import logging
 import traceback
 import sys
@@ -16,7 +17,11 @@ import calc
 # Direct all RedisPRC logging messages to stderr.
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
-
+parser = argparse.ArgumentParser(description='Example calculator server')
+parser.add_argument('--transport', choices=('json', 'pickle'), default='json',
+    help='data encoding used for transport')
+args = parser.parse_args()
+ 
 def do_calculations(calculator):
     calculator.clr()
     calculator.add(5)
@@ -38,6 +43,6 @@ do_calculations(calculator)
 # 2. Remote object, should act like local object
 redis_server = redis.Redis()
 message_queue = 'calc'
-calculator = redisrpc.Client(redis_server, message_queue, timeout=1)
+calculator = redisrpc.Client(redis_server, message_queue, timeout=1, transport=args.transport)
 do_calculations(calculator)
 print('success!')

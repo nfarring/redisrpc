@@ -127,6 +127,12 @@ calcaultor.div(2)
 assert calculator.val() == 4
 ```
 
+The Python client also takes the additional keyword parameters `timeout`
+and `transport`. If `transport='pickle'` then it is possible to send Python
+objects as function arguments, but only if the server is also implemented in
+Python, and only if the server has access to the same libraries in order to
+unpickle the objects.
+
 ### server.py
 
 ```python
