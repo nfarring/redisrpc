@@ -13,3 +13,4 @@ python/README.rst
 python/build
 python/dist
 python/redisrpc.egg-info
+python/redis-server.log
