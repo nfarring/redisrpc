@@ -30,10 +30,12 @@ __all__ = [
     'TimeoutException'
 ]
 
+if sys.version_info < (3,):
+    range = xrange
 
 def random_string(size=8, chars=string.ascii_uppercase + string.digits):
     """Ref: http://stackoverflow.com/questions/2257441"""
-    return ''.join(random.choice(chars) for x in xrange(size))
+    return ''.join(random.choice(chars) for x in range(size))
 
 
 class curry:
@@ -78,7 +80,7 @@ class FunctionCall(dict):
         argstring = '' if 'args' not in self else \
                 ','.join(str(arg) for arg in self['args'])
         kwargstring = '' if 'kwargs' not in self else \
-                ','.join('%s=%s' % (key,val) for (key,val) in self['kwargs'].iteritems())
+                ','.join('%s=%s' % (key,val) for (key,val) in list(self['kwargs'].items()))
         if len(argstring) == 0:
             params = kwargstring
         elif len(kwargstring) == 0:
@@ -106,6 +108,8 @@ class Client(object):
         result = self.redis_server.blpop(response_queue, self.timeout)
         if result is None: raise TimeoutException()
         message_queue, message = result
+        message_queue = message_queue.decode()
+        message = message.decode()
         assert message_queue == response_queue
         logging.debug('RPC Response: %s' % message)
         rpc_response = json.loads(message)
@@ -134,15 +138,17 @@ class Server(object):
         self.redis_server.delete(self.message_queue)
         while True:
             message_queue, message = self.redis_server.blpop(self.message_queue)
+            message_queue = message_queue.decode()
+            message = message.decode()
             assert message_queue == self.message_queue
             logging.debug('RPC Request: %s' % message)
             rpc_request = json.loads(message)
             response_queue = rpc_request['response_queue']
             function_call = FunctionCall.from_dict(rpc_request['function_call'])
-            code = 'return_value = self.local_object.' + function_call.as_python_code()
+            code = 'self.return_value = self.local_object.' + function_call.as_python_code()
             try:
                 exec(code)
-                rpc_response = dict(return_value=return_value)
+                rpc_response = dict(return_value=self.return_value)
             except:
                 (type, value, traceback) = sys.exc_info()
                 rpc_response = dict(exception=repr(value))
