@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
   s.version = RedisRPC::VERSION
   s.license = 'GPLv3'
   s.authors = ['Nathan Farrington']
-  s.email = ['nfarring@gmail.com']
+  s.email = ['nathan@nathanfarrington.com']
 
   s.homepage = 'http://github.com/nfarring/redisrpc'
   s.summary = 'Lightweight RPC for Redis'

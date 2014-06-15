@@ -1,7 +1,10 @@
+VERSION:=$(shell cat VERSION)
+
 BASIC_TARGETS:=\
 	README.html
 
-RUBY_TARGETS:=
+RUBY_TARGETS:=\
+    ruby/lib/redisrpc/version.rb
 
 PHP_TARGETS:=\
 	composer.phar\
@@ -85,6 +88,15 @@ README.html: README.markdown
 ########################
 # Rules for Ruby Targets
 ########################
+
+ruby/lib/redisrpc:
+	mkdir $@
+
+ruby/lib/redisrpc/version.rb: ruby/lib/redisrpc
+	printf "module RedisRPC\n" >$@
+	printf "  #Ref: http://semver.org/\n" >>$@
+	printf "  VERSION = '%s'\n" $(VERSION) >>$@
+	printf "end\n" >>$@
 
 #######################
 # Rules for PHP Targets
