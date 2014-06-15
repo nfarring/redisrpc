@@ -1,5 +1,5 @@
 # Ref: http://semver.org/
-VERSION='0.3.6p1'
+VERSION='0.3.6p2'
 
 import sys
 from setuptools import setup
@@ -17,7 +17,6 @@ CLASSIFIERS=[
     'Topic :: Software Development :: Object Brokering',
     'Topic :: System :: Distributed Computing'
 ]
-CMDCLASS={'test': Tox}
 DESCRIPTION='Lightweight RPC using Redis'
 DOWNLOAD_URL='https://github.com/downloads/nfarring/redisrpc/redisrpc-python-%s.tar.gz' % VERSION
 INSTALL_REQUIRES=[
@@ -42,7 +41,6 @@ setup(
     author=AUTHOR,
     author_email=AUTHOR_EMAIL,
     classifiers=CLASSIFIERS,
-    cmdclass=CMDCLASS,
     description=DESCRIPTION,
     download_url=DOWNLOAD_URL,
     install_requires=INSTALL_REQUIRES,
