@@ -95,7 +95,7 @@ def decode_message(message):
     """Returns a (transport, decoded_message) pair."""
     # Try JSON, then try Python pickle, then fail.
     try:
-        return JSONTransport.create(), json.loads(message)
+        return JSONTransport.create(), json.loads(message.decode())
     except:
         pass
     return PickleTransport.create(), pickle.loads(message)
@@ -112,7 +112,7 @@ class JSONTransport(object):
     def dumps(self, obj):
         return json.dumps(obj)
     def loads(self, obj):
-        return json.loads(obj)
+        return json.loads(obj.decode())
 
 
 class PickleTransport(object):
@@ -124,7 +124,8 @@ class PickleTransport(object):
             cls._singleton = PickleTransport()
         return cls._singleton
     def dumps(self, obj):
-        return pickle.dumps(obj, protocol=pickle.HIGHEST_PROTOCOL)
+        # Version 2 works for Python 2.3 and later
+        return pickle.dumps(obj, protocol=2)
     def loads(self, obj):
         return pickle.loads(obj)
  
