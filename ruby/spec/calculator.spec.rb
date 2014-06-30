@@ -27,10 +27,23 @@ describe Calculator do
         calculator.val.should == 0.0
       end
 
-      it 'should raise when missing method is called' do
-        expect{ calculator.a_missing_method }.to raise_error(
-          over_redisrpc ? RedisRPC::RemoteException : NoMethodError
-        )
+      context 'when missing method is called' do
+        subject{ calculator.a_missing_method }
+        it 'should raise' do
+          expect{ subject }.to raise_error(
+            over_redisrpc ? RedisRPC::RemoteException : NoMethodError
+          )
+        end
+
+        it 'should include RedisRPC::Server in backtrace' do
+          begin
+            subject
+          rescue
+            $!.backtrace.grep(/lib\/redisrpc\.rb:[0-9]+:in `run'/).should_not be_empty
+          else
+            fail 'nothing raised'
+          end
+        end if over_redisrpc
       end
 
       it 'should raise timeout when execution expires' do
