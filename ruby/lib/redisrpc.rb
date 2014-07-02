@@ -81,11 +81,18 @@ module RedisRPC
   end
 
   class Server
-    def initialize( redis_server, message_queue, local_object, timeout=nil )
+    # Legacy: Server.new( redis_server, queue, local_object, timeout )
+    # Current: Server.new( redis_server, { queue => local_object }, timeout )
+    def initialize( redis_server, *args )
       @redis_server = redis_server
-      @message_queue = message_queue
-      @local_object = local_object
-      @timeout = timeout
+      if args.first.is_a? String
+        @local_objects = Hash[*args.shift(2)].freeze
+      else
+        @local_objects = args.shift.map do |k,v|
+          { k.to_s => v }
+        end.reduce({},:merge).freeze
+      end
+      @timeout = args.pop
     end
 
     def run
@@ -98,14 +105,21 @@ module RedisRPC
     end
 
     def flush_queue!
-      @redis_server.del @message_queue
+      @redis_server.del *queues
     end
 
     private
 
+    attr_reader :local_objects
+
+    def queues
+      raise :no_queues if local_objects.empty?
+      local_objects.keys
+    end
+
     def run_one
       # request setup
-      message_queue, rpc_raw_request = @redis_server.blpop @message_queue, timeout
+      queue, rpc_raw_request = @redis_server.blpop *(queues.shuffle << timeout)
       return nil if rpc_raw_request.nil?
       rpc_request = MultiJson.load rpc_raw_request
       response_queue = rpc_request['response_queue']
@@ -113,7 +127,7 @@ module RedisRPC
 
       # request execution
       begin
-        return_value = @local_object.send( function_call['name'].to_sym, *function_call['args'] )
+        return_value = local_objects[queue].send( function_call['name'].to_sym, *function_call['args'] )
         rpc_response = {'return_value' => return_value}
       rescue Object => err
         rpc_response = {'exception' => err.to_s, 'backtrace' => err.backtrace}
