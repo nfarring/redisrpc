@@ -20,26 +20,29 @@ namespace RedisRPC;
 use RedisRPC\RemoteException;
 
 # Ref: http://www.php.net/manual/en/language.constants.php
-if (!function_exists("debug_print")) { 
-    if ( defined('DEBUG') && TRUE===DEBUG ) { 
-        function debug_print($string,$flag=NULL) { 
-            /* if second argument is absent or TRUE, print */ 
-            if ( !(FALSE===$flag) ) 
+if (!function_exists("debug_print")) {
+    if (defined('DEBUG') && TRUE === DEBUG) {
+        function debug_print($string, $flag = NULL)
+        {
+            /* if second argument is absent or TRUE, print */
+            if (!(FALSE === $flag))
                 #print 'DEBUG: '.$string . "\n"; 
-                print $string . "\n"; 
-        } 
-    } else { 
-        function debug_print($string,$flag=NULL) { 
-        } 
-    } 
-} 
+                print $string . "\n";
+        }
+    } else {
+        function debug_print($string, $flag = NULL)
+        {
+        }
+    }
+}
 
 # Ref: http://stackoverflow.com/questions/2257441
 # Ref: http://stackoverflow.com/questions/853813/how-to-create-a-random-string-using-php
 /**
  *
  */
-function random_string($size, $valid_chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789') {
+function random_string($size, $valid_chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789')
+{
 
     // start with an empty random string
     $retval = "";
@@ -48,14 +51,13 @@ function random_string($size, $valid_chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij
     $num_valid_chars = strlen($valid_chars);
 
     // repeat the steps until we've created a string of the right size
-    for ($i = 0; $i < $size; $i++)
-    {
+    for ($i = 0; $i < $size; $i++) {
         // pick a random number from 1 up to the number of valid chars
         $random_pick = mt_rand(1, $num_valid_chars);
 
         // take the random character out of the string of valid chars
         // subtract 1 from $random_pick because strings are indexed starting at 0, and we started picking at 1
-        $random_char = $valid_chars[$random_pick-1];
+        $random_char = $valid_chars[$random_pick - 1];
 
         // add the randomly-chosen char onto the end of our string so far
         $retval .= $random_char;
@@ -68,18 +70,21 @@ function random_string($size, $valid_chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij
 /**
  *
  */
-class Client {
+class Client
+{
 
     private $redis_server;
     private $message_queue;
 
-    public function __construct($redis_server, $message_queue, $timeout = 0) {
+    public function __construct($redis_server, $message_queue, $timeout = 0)
+    {
         $this->redis_server = $redis_server;
         $this->message_queue = $message_queue;
         $this->timeout = $timeout;
     }
 
-    public function __call($name, $arguments) {
+    public function __call($name, $arguments)
+    {
         # Construct the RPC Request message from the $name and $arguments.
         # Send the RPC Request to Redis.
         # Block on the RPC Response from Redis.
@@ -104,10 +109,10 @@ class Client {
         assert($message_queue == $response_queue);
         debug_print("RPC Response: $message\n");
         $rpc_response = json_decode($message);
-        if (array_key_exists('exception',$rpc_response) && $rpc_response->exception != NULL) {
+        if (isset($response_queue->exception) && $rpc_response->exception != NULL) {
             throw new RemoteException($rpc_response->exception);
         }
-        if (!array_key_exists('return_value',$rpc_response)) {
+        if (!isset($rpc_response->return_value)) {
             throw new RemoteException('Malformed RPC Response message');
         }
         return $rpc_response->return_value;
